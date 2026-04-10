@@ -10,7 +10,7 @@ export default function Home() {
           Work with us
         </p>
         <a
-          href="mailto:hello@chaosfest.sg"
+          href="mailto:benny@chaos-fest.com"
           className="text-[clamp(1.2rem,2.5vw,1.8rem)] border-b-2 border-foreground pb-1 hover:opacity-60 transition-opacity inline-block min-h-[44px] flex items-center"
         >
           Let&rsquo;s build something &rarr;
