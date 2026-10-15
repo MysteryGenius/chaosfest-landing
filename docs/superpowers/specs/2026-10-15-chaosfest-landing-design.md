@@ -63,10 +63,12 @@ behind them and no second route. `Show Floor` remains as a working anchor.
 When Agenda content exists it is a new section plus a nav entry, not a
 rebuild.
 
-Sections live in `components/sections/`, one file each, composed by
-`page.tsx`. Each takes its content as props from the page's Sanity query —
-sections do not fetch. This keeps them trivially reusable when the designer
-reorders the page.
+Sections live in `components/sections/`, one file each. `page.tsx` maps over
+the CMS `sections[]` array and renders each block by `_type`. Each section
+takes its content as props — sections do not fetch. The order above is the
+seeded default, not a hardcoded sequence: marketing can reorder it by
+dragging in the Presentation tool, and the designer can reorder it without
+touching data.
 
 ## Content: Sanity
 
@@ -77,52 +79,102 @@ hardcoded would make engineering the bottleneck for every word — a
 regression in their day-to-day, and the reason the Resend-style
 developer-first approach was rejected.
 
-Sanity's Presentation tool with Visual Editing lets marketing click text on
-a preview of the real page and edit in place. That is the closest available
-analogue to the Wix editing model they already know.
+Sanity's Presentation tool gives marketing substantially more than
+click-to-edit text. Verified against Sanity's editor documentation on
+2026-10-15, the Presentation tool provides:
+
+- **Click-to-edit overlays** — hover any element on a live preview of the
+  real page, click it, and the editor jumps to that exact field, however
+  deep in the structure
+- **Drag-and-drop page building** — reorder sections by dragging them on the
+  preview. Right-click a block for a context menu to reposition, remove or
+  add content. Hold Shift while dragging for a zoomed-out minimap
+- **Real-time preview** — the page updates as they type
+- **Mobile viewport toggle** — check responsive behaviour without leaving
+  the Studio
+- **Shareable draft previews** — a link or QR code so others can review
+  unpublished changes on a phone; revocable, and regenerating invalidates
+  the old link
+
+That is a genuine Wix-equivalent editing experience, not a developer tool
+with a preview pane bolted on.
 
 The Sanity MCP connector is already configured for this project; no code in
 the repo uses it yet.
 
-### Plan tier — requires spend
+### Plan tier: Growth
 
-Sanity's **free tier offers only Administrator and Viewer roles**. There is
-no Editor role on free. Administrator includes full access to project
-settings and dataset deletion; Viewer cannot edit. Neither is appropriate
-for a non-technical marketer.
+Direction given: **cost is not a constraint; optimise for marketing's
+experience.** Growth is therefore the floor, not a stretch.
 
-**Growth, $15/seat/month**, unlocks:
+Sanity's **free tier offers only Administrator and Viewer roles** — no
+Editor. Administrator carries full project settings access including dataset
+deletion; Viewer cannot edit. Neither suits a non-technical marketer, so
+free is ruled out on capability, independent of budget.
+
+**Growth, $15/seat/month**, unlocks the roles:
 
 - **Editor** — edit and publish, no project settings access
 - **Contributor** — draft and edit, cannot publish
 
-Budget approximately **$30/month for two marketing seats**. Viewers remain
-free. This is a deliberate, required cost: granting a non-technical marketer
-Administrator on the free plan is how datasets get deleted.
+and the editorial workflow features that matter for an event campaign:
+
+- **Content Releases** — bundle edits across several documents and schedule
+  them to go live together. The natural fit for a lineup, guest or
+  ticket-release announcement, where a dozen changes must land at one
+  moment, not trickle out.
+- **Scheduled drafts** — queue a single document for a future publish time
+- **Comments with @mentions** — marketing and reviewers resolve copy
+  feedback inside the Studio instead of over chat screenshots
+- **Tasks** — assign and track outstanding content work, e.g. the three card
+  bodies Wix left blank
+
+Budget: **$15/seat/month for each editing seat**; viewers are free. Seat
+count is an open item below.
 
 ### Schema
 
-Singleton `landingPage` document, because there is one page and marketing
-should not be able to create a second:
+Designed so marketing can restructure the page, not merely retype it.
+
+Singleton `landingPage` document — one page, and marketing should not be
+able to create a second. It holds:
 
 - `hero` — eyebrow, headline, subheadline, image
-- `about` — heading, body
-- `showFloor` — heading, intro, `cards[]`
-- `card` (object) — title, body, image
-- `waitlist` — heading, dateLine, locationLine, buttonLabel, successMessage,
-  consentLabel
+- `sections[]` — an **ordered array of section blocks**, drag-and-drop
+  reorderable in the Presentation tool
 - `footer` — copyrightLine
 
-Each field carries `description` helper text telling marketing what belongs
-there and roughly how long. The three bodies Wix left as
-*"Describe one of your services"* ship **empty**, so the Studio shows them
-as visibly unfilled work rather than plausible-looking filler that nobody
-notices. This replaces the earlier plan for in-page `TODO` badges — an empty
-CMS field is a better signal, and it is marketing's to fill rather than
-ours.
+Section block types available in `sections[]`:
+
+- `aboutSection` — heading, body
+- `showFloorSection` — heading, intro, `cards[]` (itself reorderable)
+- `waitlistSection` — heading, dateLine, locationLine, buttonLabel,
+  successMessage, consentLabel
+- `card` (object, used inside `showFloorSection`) — title, body, image
+
+The array-of-blocks shape rather than fixed named fields is what enables
+drag-and-drop reordering and lets marketing add a second waitlist prompt or
+drop About entirely without a developer. It costs a little more work now and
+is the difference between a CMS they can compose in and one they can only
+fill in.
+
+Each field carries `description` helper text stating what belongs there and
+roughly how long it should be. Each block type gets a `preview` config so
+the array lists readable titles rather than "Untitled". Field-level
+validation caps headline lengths so a long entry cannot visually break a
+layout the designer has not finalised.
+
+The three bodies Wix left as *"Describe one of your services"* ship
+**empty**, so the Studio shows them as visibly unfilled work rather than
+plausible filler nobody notices. Paired with a Task assigned to marketing,
+the gaps are tracked rather than forgotten. This replaces the earlier
+in-page `TODO` badge idea — an empty CMS field is the better signal, and
+the copy is marketing's to write, not ours.
 
 Sections render nothing for an empty optional body rather than collapsing or
-erroring.
+erroring. `page.tsx` maps over `sections[]` and renders each block by
+`_type`, so an unrecognised or empty block is skipped rather than crashing
+the page.
 
 ### Implementation notes
 
@@ -141,29 +193,42 @@ erroring.
 
 Replaces the "Get Tickets" CTA, since tickets do not exist yet.
 
-Provider comparison as researched on 2026-10-15:
+Provider comparison as researched on 2026-10-15. Cost is explicitly **not**
+a deciding factor per the direction given, so the comparison is on
+marketing's day-to-day experience; prices are listed for planning only.
 
-| | Free tier | Paid entry | Marketing self-service | Catch |
+| | Marketing self-service | Automations | Vendor branding | Price for planning |
 |---|---|---|---|---|
-| **Kit** | **10,000 subscribers**, unlimited broadcasts | $33/mo | Visual builder, unlimited forms | Automations paid-only |
-| Loops | 1,000 contacts | $49/mo | Good UI | Loops footer on free-tier emails |
-| Brevo | ~300 emails/day | ~$9/mo | Decent builder | Bills per send; awkward for bursts |
-| Mailchimp | 250 contacts | $16/mo | Familiar but degrading | Bills on stored contacts; feature-gating |
-| Resend | 1,000 contacts | $20/mo | **None** — API-first | Every campaign is a dev task |
+| **Kit** (Creator) | Visual builder, unlimited forms + landing pages | Visual automation canvas | None | $33/mo |
+| Loops | Modern, clean UI | Visual loops | **Footer on free tier** | $49/mo |
+| Brevo | Decent builder | Yes | None on paid | ~$9/mo, bills per send |
+| Mailchimp | Familiar but degrading | Yes, tier-gated | None on paid | $16/mo |
+| Resend | **None** — API-first | No | None | $20/mo |
 
-Kit is chosen because:
+**Kit on the Creator plan ($33/mo)** is chosen:
 
-1. **10,000 free subscribers with unlimited broadcasts** — 40× Mailchimp's
-   free tier. A waitlist building toward July 2027 may never incur cost.
-2. **Marketing sends campaigns unaided** via the visual builder. This is the
-   requirement that eliminated Resend.
-3. **The API upserts**, which removes a design problem (see below).
-4. **No vendor branding on emails at $0**, unlike Loops — this is an
-   attendee's first contact with the event.
+1. **Marketing runs campaigns unaided** — visual email builder, unlimited
+   forms and landing pages. This requirement alone eliminates Resend, whose
+   dashboard is developer-facing and would make every send a dev ticket.
+2. **Visual automations** come with Creator, so marketing can build a
+   welcome sequence and later a pre-event reminder series themselves. On the
+   free tier these are locked; since cost is not a constraint, we take
+   Creator from the start rather than discovering the ceiling mid-campaign.
+3. **Audience tagging and segmentation** — segment by signup date or
+   interest to message, say, artists separately from attendees.
+4. **No vendor branding**, unlike Loops' free tier. This is an attendee's
+   first contact with the event.
+5. **The API upserts**, which removes a design problem (see below).
 
-Known limitation: visual automation sequences require Creator tier
-($33/mo). A single confirmation email is achievable below that; a welcome
-drip is not. Acceptable, and a clear trigger for when to upgrade.
+Mailchimp is rejected on your assessment, which the research supports: it
+bills on stored rather than engaged contacts and gates features upward.
+Brevo's per-send billing is awkward for announcement bursts, which is
+exactly this site's usage pattern.
+
+Because we start on Creator rather than free, there is no automation
+ceiling to work around: marketing can build the welcome email and any later
+sequences in Kit's own canvas, with no engineering involvement. The site's
+only job is to get a verified address into the right Kit audience.
 
 ### Flow
 
@@ -192,15 +257,19 @@ Details:
 
 ### Environment
 
-```
+```sh
 NEXT_PUBLIC_SANITY_PROJECT_ID=
 NEXT_PUBLIC_SANITY_DATASET=
-SANITY_API_READ_TOKEN=
-KIT_API_KEY=
+NEXT_PUBLIC_SANITY_API_VERSION=
+SANITY_API_READ_TOKEN=      # drafts for Visual Editing; server-only
+SANITY_REVALIDATE_SECRET=   # verifies the publish webhook
+KIT_API_KEY=                # X-Kit-Api-Key; server-only
+KIT_FORM_ID=                # or audience/tag id for waitlist signups
 ```
 
 `.env.example` committed; `.env.local` git-ignored. No env files exist in the
-repo yet.
+repo yet. Only the `NEXT_PUBLIC_*` values may reach the browser; the tokens
+and the Kit key are server-only.
 
 ## Interactions
 
@@ -260,20 +329,49 @@ component rendering.
 - Waitlist: new address succeeds; repeat address succeeds; malformed address
   shows a field error; request with an invalid key shows the generic error
   and logs server-side
-- Marketing-path check: edit copy in Studio, confirm it appears on the page
-  without a deploy
+- **Marketing-path checks** — the acceptance criteria that matter most,
+  since the whole design is justified by them. Performed in the Studio with
+  no code changes and no deploy:
+  - Edit a heading in the Presentation tool; it appears on the page
+  - Click an element on the preview; the editor jumps to that field
+  - Drag a section to reorder it; the live page reflects the new order
+  - Fill one of the three empty card bodies; it renders
+  - Swap the hero image; it renders at the right size
+  - Toggle the mobile viewport; the layout holds
+  - Publish, then confirm the public page updates without a rebuild
 - `prefers-reduced-motion: reduce` — all content readable, no motion
 - Mobile width — no horizontal scroll; the six-card grid reflows
 - Keyboard — Show Floor anchor and the waitlist form are reachable and
   submittable
 
+## Division of ownership
+
+Stated explicitly, because it is the point of these tool choices:
+
+| Concern | Owner | Needs a developer? |
+|---|---|---|
+| Page copy, headings, images | Marketing, in Sanity | No |
+| Section order, adding/removing sections | Marketing, in Sanity | No |
+| Scheduling a coordinated announcement | Marketing, Content Releases | No |
+| Welcome email and any sequences | Marketing, in Kit | No |
+| Campaign sends and segmentation | Marketing, in Kit | No |
+| Layout, styling, motion | Designer, then engineering | Yes |
+| New section *types* | Engineering | Yes |
+
+The confirmation email is deliberately **Kit's job, not the site's**. The
+Server Action adds the subscriber and returns; Kit's own automation sends
+the welcome. One place to edit that email, owned by the people who write it,
+and no email template in the codebase to go stale.
+
 ## Open items for the reviewer
 
-1. **Sanity Growth at ~$30/mo for two seats** is required for marketing to
-   have the Editor role. Confirm the spend.
-2. **A Sanity project and dataset** must exist, plus a Kit account and API
-   key, before the integration work can be verified.
-3. **Seat count** — how many marketing people need edit access?
-4. **Confirmation email** — send one on signup, or collect addresses
-   silently for now? Spec assumes a single confirmation email, no drip
-   sequence.
+1. **Seat count** — how many marketing people need edit access? Sanity
+   Growth bills $15/seat/month for editors; viewers are free.
+2. **Accounts and credentials** — a Sanity project and dataset, and a Kit
+   account on Creator with an API key, must exist before the integrations
+   can be verified end to end.
+3. **Sending domain** — Kit sending from `@chaos-fest.com` needs that
+   domain's DNS records added. Who administers DNS?
+4. **Welcome email content** — the spec assumes marketing writes and owns
+   it in Kit. If they would rather the site send a plain confirmation, say
+   so; it is a small addition but moves ownership back to engineering.
