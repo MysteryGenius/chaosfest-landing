@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-6 flex-wrap">
+    <footer className="bg-[#f7e7cb] py-6 px-22 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-6 flex-wrap">
       <div className="flex gap-4 items-center flex-wrap">
         <span className="text-sm text-muted">Powered by</span>
         <Link href="https://percent-twenty.com" target="_blank" rel="noopener noreferrer">

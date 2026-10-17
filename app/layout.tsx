@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Averia_Serif_Libre, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,9 +12,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const averiaSerifLibre = Averia_Serif_Libre({
+  variable: "--font-averia-serif-libre",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Chaosfest",
-  description: "Bringing chaos to South East Asian Table Top Role Playing Games",
+  description:
+    "Bringing chaos to South East Asian Table Top Role Playing Games",
 };
 
 export default function RootLayout({
@@ -25,9 +32,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${averiaSerifLibre.variable} h-full antialiased`}
     >
-      <body className="min-h-dvh flex flex-col justify-between px-[5vw] py-[4vh]">{children}</body>
+      <body className="bg-[#7a302f]">
+        {children}
+      </body>
     </html>
   );
 }
